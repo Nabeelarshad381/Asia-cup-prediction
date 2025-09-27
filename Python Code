@@ -1,0 +1,88 @@
+#pythonCode
+import pandas as pd
+import matplotlib.pyplot as plt
+import os
+
+def analyze_asia_cup_data():
+
+    file_paths = {
+        'match_data': 'Asia cup.zip/asiacup.csv',
+        'batsman_odi': 'Asia cup.zip/batsman data odi.csv',
+        'batsman_t20i': 'Asia cup.zip/batsman data t20i.csv',
+        'bowler_odi': 'Asia cup.zip/bowler data odi.csv',
+        'bowler_t20i': 'Asia cup.zip/bowler data t20i.csv',
+        'champions': 'Asia cup.zip/champion.csv',
+        'wicketkeeper_odi': 'Asia cup.zip/wicketkeeper data odi.csv',
+        'wicketkeeper_t20i': 'Asia cup.zip/wicketkeeper data t20i.csv'
+    }
+
+    try:
+        all_data = {name: pd.read_csv(path) for name, path in file_paths.items()}
+    except FileNotFoundError as e:
+        print(f"Error: {e}. Please check the file paths.")
+        return
+
+    for df in all_data.values():
+        df.columns = df.columns.str.strip()
+
+    match_df = all_data['match_data'].copy()
+    match_df['Run Scored'] = pd.to_numeric(match_df['Run Scored'], errors='coerce').fillna(0)
+    match_df['Wicket Lost'] = pd.to_numeric(match_df['Wicket Lost'], errors='coerce').fillna(0)
+    match_df['Result'] = match_df['Result'].replace(['Win D/L', 'Lose D/L'], ['Win', 'Lose'])
+    
+    print("\n--- Analysis 1: Most Successful Asia Cup Teams (Overall) ---")
+    champions_df = all_data['champions']
+    champions_count = champions_df['Champion'].value_counts().reset_index()
+    champions_count.columns = ['Team', 'Tournament Wins']
+    print(champions_count)
+    
+    plt.figure(figsize=(10, 6))
+    plt.bar(champions_count['Team'], champions_count['Tournament Wins'], color='skyblue')
+    plt.title('Most Asia Cup Tournament Wins')
+    plt.xlabel('Team')
+    plt.ylabel('Number of Wins')
+    plt.xticks(rotation=45, ha='right')
+    plt.tight_layout()
+    plt.show()
+
+    print("\n--- Analysis 2: Top ODI Batsmen (All Time) ---")
+    top_odi_batsmen = all_data['batsman_odi'].sort_values(by='Runs', ascending=False).head(10)
+    print(top_odi_batsmen[['Player Name', 'Runs', 'Batting Average', 'Strike Rate']])
+
+    print("\n--- Analysis 3: Top T20I Batsmen (All Time) ---")
+    top_t20i_batsmen = all_data['batsman_t20i'].sort_values(by='Runs', ascending=False).head(10)
+    print(top_t20i_batsmen[['Player Name', 'Runs', 'Batting Average', 'Strike Rate']])
+
+    print("\n--- Analysis 4: Top ODI Bowlers (All Time) ---")
+    top_odi_bowlers = all_data['bowler_odi'].sort_values(by='Wickets', ascending=False).head(10)
+    print(top_odi_bowlers[['Player Name', 'Wickets', 'Bowling Average', 'Economy Rate']])
+
+    print("\n--- Analysis 5: Top T20I Bowlers (All Time) ---")
+    top_t20i_bowlers = all_data['bowler_t20i'].sort_values(by='Wickets', ascending=False).head(10)
+    print(top_t20i_bowlers[['Player Name', 'Wickets', 'Bowling Average', 'Economy Rate']])
+
+    print("\n--- Analysis 6: Recent T20I Performance (2016 & 2022) ---")
+    t20i_matches = match_df[match_df['Format'] == 'T20I'].copy()
+    t20i_wins = t20i_matches[t20i_matches['Result'] == 'Win']['Team'].value_counts().reset_index()
+    t20i_wins.columns = ['Team', 'T20I Wins']
+    print("\nTotal T20I Wins:")
+    print(t20i_wins)
+    
+    total_matches_played = t20i_matches['Team'].value_counts()
+    winning_percentage = (t20i_wins.set_index('Team')['T20I Wins'] / total_matches_played) * 100
+    winning_percentage_df = winning_percentage.sort_values(ascending=False).reset_index()
+    winning_percentage_df.columns = ['Team', 'Winning Percentage (%)']
+    print("\nTeam Winning Percentage (T20I):")
+    print(winning_percentage_df)
+
+    plt.figure(figsize=(10, 6))
+    plt.bar(t20i_wins['Team'], t20i_wins['T20I Wins'], color='lightgreen')
+    plt.title('T20I Match Wins (2016 & 2022 Asia Cups)')
+    plt.xlabel('Team')
+    plt.ylabel('Number of Wins')
+    plt.xticks(rotation=45, ha='right')
+    plt.tight_layout()
+    plt.show()
+
+if __name__ == "__main__":
+    analyze_asia_cup_data()
